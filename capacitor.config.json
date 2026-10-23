@@ -1,0 +1,10 @@
+
+{
+  "appId": "in.splitpay.app",
+  "appName": "Splitpay",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
