@@ -1,171 +1,630 @@
 
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#111827" />
-  <meta name="description" content="Offline-first Splitpay payment helper" />
-  <title>Splitpay</title>
-  <link rel="stylesheet" href="/src/style.css" />
-  <script type="module" src="/src/main.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f766e">
+  <title>Splitpay - UPI QR Splitter</title>
+  <style>
+    :root {
+      --primary: #0f766e;
+      --dark: #115e59;
+      --bg: #f3f7f7;
+      --border: #d8e3e3;
+      --text: #172b2b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 20px 16px;
+      text-align: center;
+    }
+    header h1 { margin: 0 0 6px; font-size: 27px; }
+    header p { margin: 0; font-size: 14px; }
+    main {
+      width: min(720px, 100%);
+      margin: auto;
+      padding: 16px;
+    }
+    .card {
+      background: white;
+      padding: 16px;
+      margin-bottom: 16px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 3px 12px #00000008;
+    }
+    h2 { font-size: 19px; margin: 0 0 14px; }
+    label {
+      display: block;
+      font-weight: 700;
+      font-size: 14px;
+      margin: 12px 0 6px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #b9cccc;
+      border-radius: 8px;
+      font-size: 16px;
+      background: white;
+    }
+    button {
+      border: 0;
+      border-radius: 9px;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .primary { background: var(--primary); color: white; }
+    .secondary { background: #e0f2f1; color: var(--dark); }
+    .danger { background: #fee2e2; color: #991b1b; }
+    .full { width: 100%; margin-top: 14px; }
+    .upi-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 10px;
+    }
+    .upi-row label { margin-top: 0; }
+    .muted { color: #627575; font-size: 13px; line-height: 1.5; }
+    .error {
+      color: #b91c1c;
+      background: #fef2f2;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 12px;
+      display: none;
+    }
+    .success {
+      color: #166534;
+      background: #f0fdf4;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 12px;
+      display: none;
+    }
+    .qr-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 12px;
+      text-align: center;
+      background: #fff;
+    }
+    .qr-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .qr-top .shop { text-align: right; overflow-wrap: anywhere; }
+    .qr-image {
+      width: 220px;
+      max-width: 100%;
+      display: block;
+      margin: 12px auto;
+    }
+    .qr-amount { font-size: 24px; font-weight: bold; }
+    .masked { color: #526565; font-size: 13px; margin-top: 8px; }
+    .qr-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .qr-actions button { flex: 1; }
+    .pay-check {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      text-align: left;
+      margin-top: 12px;
+      padding: 10px;
+      background: #f3f7f7;
+      border-radius: 8px;
+    }
+    .pay-check input { width: 20px; height: 20px; }
+    .history-item {
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .history-item:last-child { border-bottom: 0; }
+    .history-total { font-size: 18px; font-weight: bold; }
+    .history-name { margin-top: 5px; }
+    .history-date { font-size: 12px; color: #627575; margin-top: 5px; }
+    .detail-line {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .status-paid { color: #15803d; font-weight: bold; }
+    .status-cash { color: #b91c1c; font-weight: bold; }
+    .hidden { display: none !important; }
+    footer { text-align: center; padding: 8px 16px 24px; }
+    @media (max-width: 420px) {
+      main { padding: 10px; }
+      .card { padding: 13px; }
+      .qr-image { width: 200px; }
+    }
+  </style>
 </head>
 <body>
-  <header class="topbar">
-    <button class="brand" data-tab="home" aria-label="Home">
-      <span class="logo">₹</span>
-      <span id="navShopName">Splitpay</span>
-    </button>
-    <button class="menu-button" id="menuButton" aria-label="Open navigation">☰</button>
-  </header>
+<header>
+  <h1>Splitpay</h1>
+  <p>Offline UPI QR Splitter</p>
+</header>
 
-  <nav id="navMenu" class="nav-menu hidden">
-    <button data-tab="home">New payment</button>
-    <button data-tab="profile">Shop profile</button>
-    <button data-tab="history">History</button>
-    <button data-tab="settings">UPI accounts</button>
-  </nav>
+<main>
+  <section class="card">
+    <h2>Shop Details</h2>
+    <label for="shopName">Shop Name</label>
+    <input id="shopName" value="Your Shop Name" maxlength="80">
 
-  <main>
-    <section id="tab-home" class="tab">
-      <div class="panel">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">PAYMENT DESK</p>
-            <h1>New payment</h1>
-          </div>
-          <span class="offline-pill"><i></i> Offline ready</span>
-        </div>
+    <h2 style="margin-top:20px">UPI IDs</h2>
+    <div id="upiList"></div>
+    <button class="secondary" id="addUpiBtn" type="button">+ Add UPI ID</button>
+    <p class="muted">Add the UPI IDs that customers can pay to. At least one valid UPI ID is required.</p>
+  </section>
 
-        <div class="add-row">
-          <input id="quickAmount" type="number" min="0" step="0.01"
-            placeholder="Add item amount (₹)" inputmode="decimal">
-          <button class="button secondary" id="addAmount">Add</button>
-        </div>
+  <section class="card">
+    <h2>Create QR Codes</h2>
+    <label for="totalAmount">Total Amount (₹)</label>
+    <input id="totalAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="Enter total amount">
 
-        <div id="amountChips" class="amount-chips"></div>
+    <label for="customerName">Customer Name (optional)</label>
+    <input id="customerName" maxlength="100" placeholder="Enter customer name">
 
-        <div class="field-grid">
-          <label>Total amount (₹)
-            <div class="input-with-prefix">
-              <span>₹</span>
-              <input id="totalAmount" type="number" min="0" step="0.01"
-                placeholder="0.00" inputmode="decimal">
-            </div>
-          </label>
-          <label>Cash paid (₹)
-            <div class="input-with-prefix">
-              <span>₹</span>
-              <input id="cashPaid" type="number" min="0" step="0.01"
-                placeholder="0.00" inputmode="decimal">
-            </div>
-          </label>
-        </div>
-
-        <div class="remaining-card">
-          <div>
-            <p class="eyebrow">REMAINING ONLINE / UPI</p>
-            <strong id="remainingAmount">₹0.00</strong>
-          </div>
-          <span id="cashNotice" class="cash-notice hidden">
-            Cash payment · No QR needed
-          </span>
-        </div>
-
-        <label class="field-label" for="accountSelect">Receive payment in</label>
-        <select id="accountSelect">
-          <option value="">Add a UPI account in Settings</option>
-        </select>
-
-        <button id="generateQr" class="button primary full">Generate QR code</button>
-        <p class="hint">
-          QR generation works offline. The actual UPI transfer still requires
-          a compatible UPI app and network.
-        </p>
-      </div>
-    </section>
-
-    <section id="tab-profile" class="tab hidden">
-      <div class="panel">
-        <p class="eyebrow">BUSINESS</p>
-        <h1>Shop profile</h1>
-        <label class="field-label" for="shopNameInput">Shop name</label>
-        <input id="shopNameInput" type="text" maxlength="80"
-          placeholder="Your shop name">
-        <button id="saveProfile" class="button primary">Save profile</button>
-      </div>
-    </section>
-
-    <section id="tab-settings" class="tab hidden">
-      <div class="panel">
-        <p class="eyebrow">PAYMENT METHODS</p>
-        <h1>UPI accounts</h1>
-        <p class="muted">Manage the UPI IDs used to create payment QR codes.</p>
-
-        <div id="upiList" class="stack-list"></div>
-
-        <h2 id="accountFormTitle">Add account</h2>
-        <input id="upiName" type="text" maxlength="60"
-          placeholder="Nickname (e.g. Counter 1)">
-        <input id="upiId" type="text" maxlength="120"
-          placeholder="UPI ID (example@bank)">
-        <input id="bankName" type="text" maxlength="80"
-          placeholder="Bank name (optional)">
-
-        <div class="button-row">
-          <button id="saveUpi" class="button primary">Save account</button>
-          <button id="cancelEdit" class="button secondary hidden">Cancel edit</button>
-        </div>
-        <p class="hint">
-          Check the UPI ID carefully. This app does not verify bank account ownership.
-        </p>
-      </div>
-    </section>
-
-    <section id="tab-history" class="tab hidden">
-      <div class="panel">
-        <p class="eyebrow">LOCAL DEVICE RECORDS</p>
-        <h1>Transaction history</h1>
-        <p class="muted">Records are stored on this device only.</p>
-        <div id="historyList" class="stack-list"></div>
-        <button id="clearHistory" class="button danger-outline">Clear all history</button>
-      </div>
-    </section>
-  </main>
-
-  <dialog id="qrDialog" class="dialog">
-    <div class="dialog-head">
-      <div>
-        <p class="eyebrow">PAYMENT REQUEST</p>
-        <h2>Scan to pay</h2>
-      </div>
-      <button class="icon-button" data-close="qrDialog" aria-label="Close">×</button>
-    </div>
-    <div id="qrSummary" class="qr-summary"></div>
-    <div id="qrCanvas" class="qr-canvas"></div>
-    <p id="qrAccountLabel" class="muted center"></p>
-    <p class="hint center">
-      Open your UPI app and scan this code. Payment is not confirmed by displaying a QR.
+    <p class="muted">
+      Each QR amount must be a whole number between ₹100 and ₹1,999.
+      Totals that cannot be split under these rules will be rejected.
     </p>
-    <div class="button-row">
-      <button id="downloadQr" class="button secondary">Save QR image</button>
-      <button id="saveTransaction" class="button primary">Save record</button>
-    </div>
-  </dialog>
+    <button class="primary full" id="generateBtn" type="button">Generate QR Codes</button>
+    <div class="error" id="errorBox" role="alert"></div>
+    <div class="success" id="successBox" role="status"></div>
+  </section>
 
-  <dialog id="detailDialog" class="dialog">
-    <div class="dialog-head">
-      <h2>Transaction details</h2>
-      <button class="icon-button" data-close="detailDialog" aria-label="Close">×</button>
-    </div>
+  <section class="card hidden" id="resultsSection">
+    <h2>Payment QR Codes</h2>
+    <p class="muted" id="resultSummary"></p>
+    <div id="qrResults"></div>
+    <button class="secondary full" id="shareAllBtn" type="button">Share All QR JPEGs</button>
+    <button class="primary full" id="paymentDoneBtn" type="button">Payment Done — Save History</button>
+    <p class="muted">Tick a QR if it was paid by UPI. Unticked QRs are recorded as paid in cash. For a single QR, use this button only when UPI payment was successful.</p>
+  </section>
+
+  <section class="card">
+    <h2>Payment History</h2>
+    <div id="historyList"></div>
+    <button class="danger full hidden" id="clearHistoryBtn" type="button">Clear All History</button>
+  </section>
+
+  <section class="card hidden" id="detailSection">
+    <h2>Transaction Details</h2>
     <div id="detailContent"></div>
-    <div class="button-row">
-      <button id="deleteTransaction" class="button danger-outline">Delete record</button>
-      <button class="button secondary" data-close="detailDialog">Close</button>
-    </div>
-  </dialog>
+    <button class="secondary full" id="backHistoryBtn" type="button">Back to History</button>
+  </section>
+</main>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <footer>Splitpay · Your data stays on this device</footer>
-</body>
-</html>
+<footer class="muted">Splitpay · Payments are not automatically verified.</footer>
+
+<script>
+(() => {
+  "use strict";
+
+  const MAX_QR = 1999;
+  const MIN_QR = 100;
+  const HISTORY_KEY = "splitpay_history_v23";
+
+  const $ = id => document.getElementById(id);
+  let currentTransaction = null;
+  let generatedFiles = [];
+  let history = loadHistory();
+
+  function loadHistory() {
+    try {
+      const value = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+      return Array.isArray(value) ? value : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveHistory() {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      return true;
+    } catch {
+      showError("Could not save history. Your browser storage may be full or unavailable.");
+      return false;
+    }
+  }
+
+  function showError(message) {
+    $("errorBox").textContent = message;
+    $("errorBox").style.display = "block";
+    $("successBox").style.display = "none";
+  }
+
+  function showSuccess(message) {
+    $("successBox").textContent = message;
+    $("successBox").style.display = "block";
+    $("errorBox").style.display = "none";
+  }
+
+  function clearMessages() {
+    $("errorBox").style.display = "none";
+    $("successBox").style.display = "none";
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;",
+      '"': "&quot;", "'": "&#39;"
+    })[char]);
+  }
+
+  function validUpiId(value) {
+    return /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z0-9.-]{2,64}$/.test(value);
+  }
+
+  function maskUpi(upi) {
+    const parts = upi.split("@");
+    const name = parts[0];
+    const maskedName = name.length <= 2
+      ? name[0] + "*".repeat(Math.max(2, name.length))
+      : name.slice(0, 2) + "*".repeat(Math.min(6, name.length - 2));
+    return maskedName + "@" + parts.slice(1).join("@");
+  }
+
+  function addUpiRow(value = "") {
+    const row = document.createElement("div");
+    row.className = "upi-row";
+    row.innerHTML = `
+      <div>
+        <label>UPI ID</label>
+        <input class="upi-input" type="text" maxlength="260"
+          placeholder="example@oksbi" autocomplete="off">
+      </div>
+      <button class="danger remove-upi" type="button">Remove</button>
+    `;
+    row.querySelector("input").value = value;
+    row.querySelector(".remove-upi").addEventListener("click", () => {
+      if ($("upiList").children.length <= 1) {
+        showError("Keep at least one UPI ID field.");
+        return;
+      }
+      row.remove();
+      clearMessages();
+    });
+    $("upiList").appendChild(row);
+  }
+
+  function getUpiIds() {
+    const values = [...document.querySelectorAll(".upi-input")]
+      .map(input => input.value.trim())
+      .filter(Boolean);
+    if (values.length === 0) throw new Error("Enter at least one UPI ID.");
+    const invalid = values.find(value => !validUpiId(value));
+    if (invalid) throw new Error("Invalid UPI ID: " + invalid);
+    return values;
+  }
+
+  // Find a valid split with all amounts between ₹100 and ₹1,999.
+  // For exact multiples of ₹1,999, reserve one additional QR as requested.
+  function splitAmount(total) {
+    if (!Number.isSafeInteger(total) || total <= 0) {
+      throw new Error("Enter a positive whole-number amount.");
+    }
+
+    if (total <= MAX_QR) return [total];
+
+    const count = Math.floor(total / MAX_QR) + 1;
+    if (count > Math.floor(total / MIN_QR)) {
+      throw new Error(
+        "This total cannot be split into QR amounts of at least ₹100 and at most ₹1,999."
+      );
+    }
+
+    let amounts = [];
+    let remaining = total;
+
+    for (let i = 0; i < count; i++) {
+      const left = count - i - 1;
+      const low = Math.max(MIN_QR, remaining - left * MAX_QR);
+      const high = Math.min(MAX_QR, remaining - left * MIN_QR);
+
+      if (low > high) {
+        throw new Error(
+          "This total cannot be split into QR amounts of at least ₹100 and at most ₹1,999."
+        );
+      }
+
+      let amount;
+      if (i === count - 1) {
+        amount = remaining;
+      } else {
+        const midpoint = Math.floor((low + high) / 2);
+        const range = high - low;
+        const variation = Math.floor(Math.random() * (Math.min(range, 500) + 1));
+        amount = Math.max(low, Math.min(high, midpoint + (Math.random() < 0.5 ? -variation : variation)));
+      }
+
+      amounts.push(amount);
+      remaining -= amount;
+    }
+
+    // Improve variety by trying valid random redistributions.
+    for (let attempt = 0; attempt < 100; attempt++) {
+      if (amounts.length < 2) break;
+      const i = Math.floor(Math.random() * amounts.length);
+      let j = Math.floor(Math.random() * amounts.length);
+      if (i === j) j = (j + 1) % amounts.length;
+      const shift = Math.floor(Math.random() * 401) - 200;
+      const a = amounts[i] + shift;
+      const b = amounts[j] - shift;
+      if (a >= MIN_QR && a <= MAX_QR && b >= MIN_QR && b <= MAX_QR) {
+        amounts[i] = a;
+        amounts[j] = b;
+      }
+    }
+
+    if (amounts.reduce((sum, value) => sum + value, 0) !== total ||
+        amounts.some(value => value < MIN_QR || value > MAX_QR)) {
+      throw new Error("Could not create a valid split for this total. Try again.");
+    }
+
+    // Shuffle QR order so amounts are not presented in ascending order.
+    for (let i = amounts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [amounts[i], amounts[j]] = [amounts[j], amounts[i]];
+    }
+    return amounts;
+  }
+
+  function makeUpiUrl(upi, shop, amount, customer) {
+    const params = new URLSearchParams();
+    params.set("pa", upi);
+    params.set("pn", shop);
+    params.set("am", String(amount));
+    params.set("cu", "INR");
+    params.set("tn", customer);
+    return "upi://pay?" + params.toString();
+  }
+
+  // QR images are fetched from a public QR image service.
+  // QR generation requires internet access; the rest of the app is local.
+  function qrImageUrl(text) {
+    return "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=12&data=" +
+      encodeURIComponent(text);
+  }
+
+  function makeQrCard(item, index, shop) {
+    const card = document.createElement("div");
+    card.className = "qr-card";
+    card.innerHTML = `
+      <div class="qr-top">
+        <span>QR ${index + 1} of ${currentTransaction.items.length}</span>
+        <span class="shop">${escapeHtml(shop)}</span>
+      </div>
+      <img class="qr-image" alt="QR code ${index + 1}" src="${escapeHtml(qrImageUrl(item.upiUrl))}">
+      <div class="qr-amount">₹${item.amount.toLocaleString("en-IN")}</div>
+      <div class="masked">${escapeHtml(maskUpi(item.upi))}</div>
+      <div class="qr-actions">
+        <button class="secondary share-one" type="button">Share JPEG</button>
+        <button class="primary pay-one" type="button">Open UPI App</button>
+      </div>
+      <label class="pay-check">
+        <input type="checkbox" class="paid-check">
+        <span>Paid by UPI</span>
+      </label>
+    `;
+
+    card.querySelector(".pay-one").addEventListener("click", () => {
+      window.location.href = item.upiUrl;
+    });
+
+    card.querySelector(".share-one").addEventListener("click", async () => {
+      try {
+        const file = await createJpeg(item, index, shop, false);
+        await shareFiles([file], `Splitpay QR ${index + 1}`);
+      } catch (error) {
+        showError(error.message || "Could not share this QR JPEG.");
+      }
+    });
+
+    card.querySelector(".paid-check").addEventListener("change", event => {
+      item.paidByUpi = event.target.checked;
+    });
+
+    return card;
+  }
+
+  function drawQrCanvas(item, index, shop, qrImage) {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement("canvas");
+      const size = 800;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Could not create JPEG canvas."));
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = "#111827";
+      ctx.textAlign = "center";
+      ctx.font = "bold 36px Arial";
+      ctx.fillText(shop.slice(0, 35), size / 2, 60);
+
+      ctx.textAlign = "left";
+      ctx.font = "bold 27px Arial";
+      ctx.fillText(`QR ${index + 1}`, 42, 115);
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        ctx.drawImage(img, 150, 135, 500, 500);
+        ctx.textAlign = "center";
+        ctx.font = "bold 46px Arial";
+        ctx.fillText("₹" + item.amount.toLocaleString("en-IN"), size / 2, 700);
+        ctx.font = "26px Arial";
+        ctx.fillStyle = "#4b5563";
+        ctx.fillText(maskUpi(item.upi).slice(0, 40), size / 2, 750);
+        canvas.toBlob(blob => {
+          if (!blob) return reject(new Error("JPEG creation failed."));
+          resolve(new File([blob], `splitpay-qr-${index + 1}.jpg`, { type: "image/jpeg" }));
+        }, "image/jpeg", 0.95);
+      };
+      img.onerror = () => reject(new Error("Could not load QR image. Check your internet connection and try again."));
+      img.src = qrImage;
+    });
+  }
+
+  async function createJpeg(item, index, shop) {
+    const image = qrImageUrl(item.upiUrl);
+    return drawQrCanvas(item, index, shop, image);
+  }
+
+  async function shareFiles(files, title) {
+    if (!navigator.share || !navigator.canShare || !navigator.canShare({ files })) {
+      throw new Error("JPEG file sharing is not supported by this browser. Try opening the app on a compatible Android browser.");
+    }
+    await navigator.share({ files, title });
+  }
+
+  async function generateQrs() {
+    clearMessages();
+    $("qrResults").innerHTML = "";
+    generatedFiles = [];
+
+    try {
+      const total = Number($("totalAmount").value);
+      if (!Number.isSafeInteger(total) || total <= 0) {
+        throw new Error("Enter a valid positive whole-number total amount.");
+      }
+
+      const shop = $("shopName").value.trim() || "Your Shop Name";
+      const customer = $("customerName").value.trim();
+      const upis = getUpiIds();
+      const amounts = splitAmount(total);
+
+      currentTransaction = {
+        id: String(Date.now()) + "-" + Math.random().toString(36).slice(2, 8),
+        shop,
+        customer,
+        total,
+        createdAt: new Date().toISOString(),
+        items: amounts.map((amount, index) => ({
+          amount,
+          upi: upis[index % upis.length],
+          upiUrl: makeUpiUrl(upis[index % upis.length], shop, amount, customer),
+          paidByUpi: false
+        }))
+      };
+
+      $("resultSummary").textContent =
+        `Total ₹${total.toLocaleString("en-IN")} · ${amounts.length} QR code(s)`;
+      currentTransaction.items.forEach((item, index) => {
+        $("qrResults").appendChild(makeQrCard(item, index, shop));
+      });
+      $("resultsSection").classList.remove("hidden");
+      $("detailSection").classList.add("hidden");
+      showSuccess("QR codes created. Check the QR image before sharing.");
+      $("resultsSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (error) {
+      showError(error.message || "Could not generate QR codes.");
+    }
+  }
+
+  async function shareAll() {
+    clearMessages();
+    if (!currentTransaction) {
+      showError("Generate QR codes first.");
+      return;
+    }
+    const button = $("shareAllBtn");
+    button.disabled = true;
+    button.textContent = "Preparing JPEGs…";
+    try {
+      const files = [];
+      for (let i = 0; i < currentTransaction.items.length; i++) {
+        files.push(await createJpeg(
+          currentTransaction.items[i],
+          i,
+          currentTransaction.shop
+        ));
+      }
+      generatedFiles = files;
+      await shareFiles(files, "Splitpay QR JPEGs");
+    } catch (error) {
+      showError(error.message || "Could not share QR JPEGs.");
+    } finally {
+      button.disabled = false;
+      button.textContent = "Share All QR JPEGs";
+    }
+  }
+
+  function paymentDone() {
+    clearMessages();
+    if (!currentTransaction) {
+      showError("Generate QR codes first.");
+      return;
+    }
+
+    const anyUpiPaid = currentTransaction.items.some(item => item.paidByUpi);
+
+    if (currentTransaction.items.length === 1 && !anyUpiPaid) {
+      showError("For a single QR, tick Paid by UPI only after the payment succeeds. Cash or failed payments are not saved.");
+      return;
+    }
+
+    if (currentTransaction.items.length > 1 && !anyUpiPaid) {
+      showError("Tick at least one QR paid by UPI to save this split transaction. Unticked QRs will be recorded as paid in cash.");
+      return;
+    }
+
+    const record = JSON.parse(JSON.stringify(currentTransaction));
+    record.items.forEach(item => {
+      item.status = item.paidByUpi ? "UPI Paid" : "Paid in Cash";
+    });
+
+    history.unshift(record);
+    if (!saveHistory()) {
+      history.shift();
+      return;
+    }
+
+    renderHistory();
+    showSuccess("Payment transaction saved to history.");
+    $("resultsSection").classList.add("hidden");
+    currentTransaction = null;
+  }
+
+  function formatDate(iso) {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return "Unknown date";
+    return date.toLocaleString();
+  }
+
+  function renderHistory() {
+    const list = $("historyList");
+    list.innerHTML = "";
+
+    if (!history.length) {
+      list.innerHTML = '<p class="muted">No payment history yet.</p>';
+      $("clearHistoryBtn").classList.add("hidden");
+      return;
+    }
+
+    $("clearHistoryBtn").classList.remove("hidden");
+    history.forEach(record => {
+      const item = document.createElement("div");
+      item
