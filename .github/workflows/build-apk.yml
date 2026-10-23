@@ -2,13 +2,10 @@
 name: Build Splitpay Android APK
 
 on:
-  workflow_dispatch:
   push:
-    branches: [main, master]
-
-permissions:
-  contents: read
-  actions: read
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,32 +20,32 @@ jobs:
         with:
           node-version: 20
 
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web app
+        run: npm run build
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: 21
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build offline web assets
-        run: npm run build
-
-      - name: Create Android project
+      - name: Add Android platform
         run: npx cap add android
 
-      - name: Sync bundled assets into Android
+      - name: Sync Android project
         run: npx cap sync android
 
-      - name: Build debug APK
-        working-directory: android
-        run: chmod +x gradlew && ./gradlew assembleDebug
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: splitpay-debug-apk
+          name: Splitpay-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 30
