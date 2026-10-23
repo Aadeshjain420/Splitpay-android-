@@ -1,0 +1,171 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="description" content="Offline-first Splitpay payment helper" />
+  <title>Splitpay</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <script type="module" src="/src/main.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <button class="brand" data-tab="home" aria-label="Home">
+      <span class="logo">₹</span>
+      <span id="navShopName">Splitpay</span>
+    </button>
+    <button class="menu-button" id="menuButton" aria-label="Open navigation">☰</button>
+  </header>
+
+  <nav id="navMenu" class="nav-menu hidden">
+    <button data-tab="home">New payment</button>
+    <button data-tab="profile">Shop profile</button>
+    <button data-tab="history">History</button>
+    <button data-tab="settings">UPI accounts</button>
+  </nav>
+
+  <main>
+    <section id="tab-home" class="tab">
+      <div class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">PAYMENT DESK</p>
+            <h1>New payment</h1>
+          </div>
+          <span class="offline-pill"><i></i> Offline ready</span>
+        </div>
+
+        <div class="add-row">
+          <input id="quickAmount" type="number" min="0" step="0.01"
+            placeholder="Add item amount (₹)" inputmode="decimal">
+          <button class="button secondary" id="addAmount">Add</button>
+        </div>
+
+        <div id="amountChips" class="amount-chips"></div>
+
+        <div class="field-grid">
+          <label>Total amount (₹)
+            <div class="input-with-prefix">
+              <span>₹</span>
+              <input id="totalAmount" type="number" min="0" step="0.01"
+                placeholder="0.00" inputmode="decimal">
+            </div>
+          </label>
+          <label>Cash paid (₹)
+            <div class="input-with-prefix">
+              <span>₹</span>
+              <input id="cashPaid" type="number" min="0" step="0.01"
+                placeholder="0.00" inputmode="decimal">
+            </div>
+          </label>
+        </div>
+
+        <div class="remaining-card">
+          <div>
+            <p class="eyebrow">REMAINING ONLINE / UPI</p>
+            <strong id="remainingAmount">₹0.00</strong>
+          </div>
+          <span id="cashNotice" class="cash-notice hidden">
+            Cash payment · No QR needed
+          </span>
+        </div>
+
+        <label class="field-label" for="accountSelect">Receive payment in</label>
+        <select id="accountSelect">
+          <option value="">Add a UPI account in Settings</option>
+        </select>
+
+        <button id="generateQr" class="button primary full">Generate QR code</button>
+        <p class="hint">
+          QR generation works offline. The actual UPI transfer still requires
+          a compatible UPI app and network.
+        </p>
+      </div>
+    </section>
+
+    <section id="tab-profile" class="tab hidden">
+      <div class="panel">
+        <p class="eyebrow">BUSINESS</p>
+        <h1>Shop profile</h1>
+        <label class="field-label" for="shopNameInput">Shop name</label>
+        <input id="shopNameInput" type="text" maxlength="80"
+          placeholder="Your shop name">
+        <button id="saveProfile" class="button primary">Save profile</button>
+      </div>
+    </section>
+
+    <section id="tab-settings" class="tab hidden">
+      <div class="panel">
+        <p class="eyebrow">PAYMENT METHODS</p>
+        <h1>UPI accounts</h1>
+        <p class="muted">Manage the UPI IDs used to create payment QR codes.</p>
+
+        <div id="upiList" class="stack-list"></div>
+
+        <h2 id="accountFormTitle">Add account</h2>
+        <input id="upiName" type="text" maxlength="60"
+          placeholder="Nickname (e.g. Counter 1)">
+        <input id="upiId" type="text" maxlength="120"
+          placeholder="UPI ID (example@bank)">
+        <input id="bankName" type="text" maxlength="80"
+          placeholder="Bank name (optional)">
+
+        <div class="button-row">
+          <button id="saveUpi" class="button primary">Save account</button>
+          <button id="cancelEdit" class="button secondary hidden">Cancel edit</button>
+        </div>
+        <p class="hint">
+          Check the UPI ID carefully. This app does not verify bank account ownership.
+        </p>
+      </div>
+    </section>
+
+    <section id="tab-history" class="tab hidden">
+      <div class="panel">
+        <p class="eyebrow">LOCAL DEVICE RECORDS</p>
+        <h1>Transaction history</h1>
+        <p class="muted">Records are stored on this device only.</p>
+        <div id="historyList" class="stack-list"></div>
+        <button id="clearHistory" class="button danger-outline">Clear all history</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="qrDialog" class="dialog">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">PAYMENT REQUEST</p>
+        <h2>Scan to pay</h2>
+      </div>
+      <button class="icon-button" data-close="qrDialog" aria-label="Close">×</button>
+    </div>
+    <div id="qrSummary" class="qr-summary"></div>
+    <div id="qrCanvas" class="qr-canvas"></div>
+    <p id="qrAccountLabel" class="muted center"></p>
+    <p class="hint center">
+      Open your UPI app and scan this code. Payment is not confirmed by displaying a QR.
+    </p>
+    <div class="button-row">
+      <button id="downloadQr" class="button secondary">Save QR image</button>
+      <button id="saveTransaction" class="button primary">Save record</button>
+    </div>
+  </dialog>
+
+  <dialog id="detailDialog" class="dialog">
+    <div class="dialog-head">
+      <h2>Transaction details</h2>
+      <button class="icon-button" data-close="detailDialog" aria-label="Close">×</button>
+    </div>
+    <div id="detailContent"></div>
+    <div class="button-row">
+      <button id="deleteTransaction" class="button danger-outline">Delete record</button>
+      <button class="button secondary" data-close="detailDialog">Close</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <footer>Splitpay · Your data stays on this device</footer>
+</body>
+</html>
