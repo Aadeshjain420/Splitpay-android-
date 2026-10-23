@@ -1,18 +1,15 @@
+
 {
   "name": "splitpay-android",
-  "version": "1.0.0",
+  "version": "23.0.0",
   "private": true,
-  "type": "module",
+  "description": "Offline UPI QR Splitter App",
   "scripts": {
-    "build": "vite build"
+    "build": "mkdir -p dist && cp index.html dist/index.html"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
     "@capacitor/core": "^7.4.3",
-    "qrcode": "^1.5.4"
-  },
-  "devDependencies": {
-    "@capacitor/cli": "^7.4.3",
-    "vite": "^6.4.1"
+    "@capacitor/cli": "^7.4.3"
   }
 }
